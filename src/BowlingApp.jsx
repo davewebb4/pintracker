@@ -710,7 +710,7 @@ function SeriesNextView({ activeSeries, onStartNext, onExit }) {
 function StatsHeading({ title }) {
   return (
     <div style={{
-      fontSize:14, letterSpacing:3, textTransform:"uppercase",
+      fontSize:17, letterSpacing:3, textTransform:"uppercase",
       fontFamily:"'Oswald',sans-serif", color:C.muted,
       padding:"20px 0 10px", borderBottom:`1px solid ${C.border}`,
       marginBottom:4,
@@ -721,9 +721,9 @@ function StatsHeading({ title }) {
 // indent: 0 = top level, 1 = sub, 2 = sub-sub
 function ListRow({ label, value, sub, indent=0, valueColor, onClick }) {
   const indentPx = indent * 20;
-  const labelColor   = indent === 0 ? C.text : C.muted;
-  const labelSize    = indent === 2 ? 12 : 13;
-  const valueSize    = indent === 2 ? 13 : 15;
+  const labelColor   = indent === 0 ? C.text : C.cream;
+  const labelSize    = indent === 2 ? 15 : 16;
+  const valueSize    = indent === 2 ? 16 : 18;
   const borderColor  = indent === 0 ? C.border : "transparent";
 
   return (
@@ -742,11 +742,11 @@ function ListRow({ label, value, sub, indent=0, valueColor, onClick }) {
           }}/>
         )}
         <span style={{fontSize:labelSize, color:labelColor}}>{label}</span>
-        {onClick && <span style={{fontSize:14,color:C.darkGold,marginLeft:4}}>›</span>}
+        {onClick && <span style={{fontSize:17,color:C.darkGold,marginLeft:4}}>›</span>}
       </div>
       <div style={{display:"flex",alignItems:"baseline",gap:5,textAlign:"right"}}>
         <span style={{fontSize:valueSize,fontWeight:600,color:valueColor||C.gold,fontFamily:"'Oswald',sans-serif"}}>{value}</span>
-        {sub && <span style={{fontSize:14,color:C.muted}}>{sub}</span>}
+        {sub && <span style={{fontSize:17,color:C.muted}}>{sub}</span>}
       </div>
     </div>
   );
@@ -1286,6 +1286,7 @@ function GameDetailOverlay({ game, gameNumber, sessionTotal, sessionAvg, onClose
   const [editStep, setEditStep]   = useState(0);
   const [editPins, setEditPins]   = useState([1,2,3,4,5,6,7,8,9,10]);
   const [editData, setEditData]   = useState({ rolls:[], pinsAfterFirst:[1,2,3,4,5,6,7,8,9,10] });
+  const [origFrame, setOrigFrame] = useState(null);
 
   useEffect(() => { setLocalGame(game); }, [game]);
 
@@ -1294,12 +1295,24 @@ function GameDetailOverlay({ game, gameNumber, sessionTotal, sessionAvg, onClose
   const startEdit = (fi) => {
     const frame = localGame.frames[fi];
     const wasStrike = frame?.rolls?.[0] === 10;
-    const leave = wasStrike ? [] : (frame?.pinsAfterFirst?.length > 0 ? frame.pinsAfterFirst : [1,2,3,4,5,6,7,8,9,10]);
+    const leaveData = fi === 9 ? frame?.pinsLeft : frame?.pinsAfterFirst;
+    const leave = wasStrike ? [] : (leaveData?.length > 0 ? leaveData : [1,2,3,4,5,6,7,8,9,10]);
+    setOrigFrame(frame);
     setEditFi(fi); setEditStep(0); setEditPins(leave);
     setEditData({ rolls:[], pinsAfterFirst:[1,2,3,4,5,6,7,8,9,10] });
   };
 
-  const cancelEdit = () => { setEditFi(null); setEditStep(0); setEditPins([1,2,3,4,5,6,7,8,9,10]); setEditData({ rolls:[], pinsAfterFirst:[1,2,3,4,5,6,7,8,9,10] }); };
+  const cancelEdit = () => {
+    if (origFrame && editFi !== null) {
+      setLocalGame(prev => {
+        const ng = JSON.parse(JSON.stringify(prev));
+        ng.frames[editFi] = JSON.parse(JSON.stringify(origFrame));
+        return ng;
+      });
+    }
+    setOrigFrame(null);
+    setEditFi(null); setEditStep(0); setEditPins([1,2,3,4,5,6,7,8,9,10]); setEditData({ rolls:[], pinsAfterFirst:[1,2,3,4,5,6,7,8,9,10] });
+  };
 
   const togglePin = (pinId) => setEditPins(prev => prev.includes(pinId) ? prev.filter(p=>p!==pinId) : [...prev,pinId].sort((a,b)=>a-b));
 
@@ -1336,7 +1349,8 @@ function GameDetailOverlay({ game, gameNumber, sessionTotal, sessionAvg, onClose
           commitEdit(editFi, { ...newData, pinsLeft:[] });
         } else {
           newData.pinsAfterFirst = [...editPins]; newData.pinsLeft = [...editPins];
-          updateScorecard(editFi, newRolls, [...editPins]);
+          const origR2 = origFrame?.rolls?.[1];
+          updateScorecard(editFi, origR2 !== undefined ? [...newRolls, origR2] : newRolls, [...editPins]);
           setEditData(newData); setEditStep(1);
           const frame = localGame.frames[editFi];
           const ball2 = frame?.pinsAfterSecond != null ? frame.pinsAfterSecond.filter(p=>editPins.includes(p)) : [...editPins];
@@ -1346,16 +1360,30 @@ function GameDetailOverlay({ game, gameNumber, sessionTotal, sessionAvg, onClose
     } else {
       if (editStep === 0) {
         if (knocked === 10) { newData.pinsAfterFirst=[1,2,3,4,5,6,7,8,9,10]; setEditPins([1,2,3,4,5,6,7,8,9,10]); }
-        else { newData.pinsAfterFirst=[...editPins]; }
-        updateScorecard(editFi, newRolls);
+        else { newData.pinsAfterFirst=[...editPins]; newData.pinsLeft=[...editPins]; }
+        const origR2 = origFrame?.rolls?.[1]; const origR3 = origFrame?.rolls?.[2];
+        const preview = [...newRolls];
+        if (origR2 !== undefined) preview.push(origR2);
+        if (origR2 !== undefined && origR3 !== undefined) preview.push(origR3);
+        updateScorecard(editFi, preview);
         setEditData(newData); setEditStep(1);
+        // Pre-populate ball 2: if original was a spare, show all knocked; otherwise show all remaining standing
+        const avail2 = knocked === 10 ? [1,2,3,4,5,6,7,8,9,10] : [...editPins];
+        const isOrigSpare2 = origR2 !== undefined && newRolls[0] !== 10 && newRolls[0] + origR2 === 10;
+        setEditPins(isOrigSpare2 ? [] : avail2);
       } else if (editStep === 1) {
         if (newRolls[0]===10||newRolls[0]+knocked>=10) {
           const fresh=(knocked===10)||(newRolls[0]!==10&&newRolls[0]+knocked===10);
-          if(fresh){newData.pinsAfterFirst=[1,2,3,4,5,6,7,8,9,10];setEditPins([1,2,3,4,5,6,7,8,9,10]);}
+          const avail3 = fresh ? [1,2,3,4,5,6,7,8,9,10] : [...editPins];
+          if(fresh){newData.pinsAfterFirst=[1,2,3,4,5,6,7,8,9,10];}
           else{newData.pinsAfterFirst=[...editPins];}
-          updateScorecard(editFi, newRolls);
+          const origR3 = origFrame?.rolls?.[2];
+          updateScorecard(editFi, origR3 !== undefined ? [...newRolls, origR3] : newRolls);
           setEditData(newData); setEditStep(2);
+          // Pre-populate ball 3: if original was a strike, show all knocked
+          const isOrigStrike3 = origR3 === 10;
+          const isOrigSpare3 = origR3 !== undefined && origR3 === avail3.length && !isOrigStrike3;
+          setEditPins(isOrigStrike3 || isOrigSpare3 ? [] : avail3);
         } else { commitEdit(editFi, newData); }
       } else { commitEdit(editFi, newData); }
     }
@@ -2220,7 +2248,7 @@ export default function BowlingApp() {
       const rolls=frame.rolls;
       if (rolls.length===1) {
         if(knocked===10){setStandingPins([1,2,3,4,5,6,7,8,9,10]);frame.pinsAfterFirst=[1,2,3,4,5,6,7,8,9,10];}
-        else{frame.pinsAfterFirst=[...standingPins];}
+        else{frame.pinsAfterFirst=[...standingPins];frame.pinsLeft=[...standingPins];}
         setCurrentRoll(1);
       } else if (rolls.length===2) {
         const r1=rolls[0],r2=rolls[1];
@@ -2251,9 +2279,8 @@ export default function BowlingApp() {
     const game = gameId ? findGameById(gameId) : currentGame;
     const frame = game?.frames[fi];
     const wasStrike = frame?.rolls?.[0] === 10;
-    const originalLeave = (!wasStrike && frame?.pinsAfterFirst?.length > 0)
-      ? frame.pinsAfterFirst
-      : [1,2,3,4,5,6,7,8,9,10];
+    const leaveData = fi === 9 ? frame?.pinsLeft : frame?.pinsAfterFirst;
+    const originalLeave = !wasStrike && leaveData?.length > 0 ? leaveData : [1,2,3,4,5,6,7,8,9,10];
     setEditingFrame(fi);
     setEditGameId(gameId);
     setEditStep(0);
@@ -2361,6 +2388,7 @@ export default function BowlingApp() {
           setEditPins([1,2,3,4,5,6,7,8,9,10]);
         } else {
           newData.pinsAfterFirst = [...editPins];
+          newData.pinsLeft = [...editPins];
         }
         setEditData(newData); setEditStep(1);
       } else if (editStep === 1) {
