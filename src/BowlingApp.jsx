@@ -2318,7 +2318,7 @@ export default function BowlingApp() {
 
   const saveUsername = async (name) => {
     setUsernameLoading(true);
-    const { error } = await supabase.from("profiles").update({ username: name }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").upsert({ id: user.id, username: name });
     setUsernameLoading(false);
     if (error) return error.message;
     setUsername(name);

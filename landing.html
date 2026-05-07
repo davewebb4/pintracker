@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PinTracker — Bowling Scorekeeper</title>
+  <meta name="description" content="Track your bowling scores, leagues, tournaments and stats with PinTracker. Free to use, no app store needed."/>
+  <link rel="icon" href="https://www.pintracker.ca/icon.svg" type="image/svg+xml"/>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet"/>
+  <script>
+    // Redirect mobile users straight to the app
+    (function() {
+      var isMobile = /iphone|ipad|ipod|android/i.test(navigator.userAgent) || window.innerWidth < 768;
+      if (isMobile) window.location.replace('https://app.pintracker.ca');
+    })();
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d0a07;
+      --card:     #1e1812;
+      --border:   #3d3424;
+      --gold:     #f0c97a;
+      --darkgold: #c8952a;
+      --cream:    #f0e6d3;
+      --muted:    #8a7a5a;
+      --red:      #c85050;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: 'Oswald', sans-serif;
+      line-height: 1.6;
+    }
+
+    a { color: var(--gold); text-decoration: none; }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 100;
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 900;
+      background: linear-gradient(145deg, var(--cream), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .nav-cta {
+      background: linear-gradient(145deg, var(--gold), var(--darkgold));
+      color: #1a1208;
+      padding: 10px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: opacity 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 80px 24px 60px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .hero-badge {
+      display: inline-block;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(48px, 8vw, 80px);
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(145deg, var(--cream), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 20px;
+    }
+    .hero p {
+      font-size: clamp(16px, 2.5vw, 20px);
+      color: var(--muted);
+      font-weight: 300;
+      max-width: 560px;
+      margin: 0 auto 36px;
+      line-height: 1.7;
+    }
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .btn-primary {
+      background: linear-gradient(145deg, var(--gold), var(--darkgold));
+      color: #1a1208;
+      padding: 14px 36px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: opacity 0.2s;
+      display: inline-block;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-secondary {
+      border: 1px solid var(--border);
+      color: var(--gold);
+      padding: 14px 36px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: border-color 0.2s;
+      display: inline-block;
+    }
+    .btn-secondary:hover { border-color: var(--gold); }
+    .hero-note {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    /* ── Mobile notice (desktop only) ── */
+    .mobile-notice {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 480px;
+      margin: 0 auto 60px;
+      text-align: center;
+    }
+    .mobile-notice h3 {
+      font-size: 18px;
+      color: var(--gold);
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+    .mobile-notice p {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .qr-code {
+      margin: 0 auto 16px;
+      width: 160px;
+      height: 160px;
+      background: white;
+      border-radius: 12px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .qr-code img { width: 100%; height: 100%; }
+    .qr-label {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* ── Features ── */
+    .section {
+      padding: 60px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-label {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      text-align: center;
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700;
+      color: var(--cream);
+      margin-bottom: 48px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .feature-icon {
+      font-size: 32px;
+      margin-bottom: 14px;
+    }
+    .feature-card h3 {
+      font-size: 17px;
+      color: var(--gold);
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    .feature-card p {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 300;
+      line-height: 1.7;
+    }
+
+    /* ── How it works ── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+      counter-reset: steps;
+    }
+    .step {
+      text-align: center;
+      padding: 24px 16px;
+    }
+    .step-number {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, var(--gold), var(--darkgold));
+      color: #1a1208;
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .step h3 {
+      font-size: 16px;
+      color: var(--cream);
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    .step p {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 300;
+      line-height: 1.6;
+    }
+
+    /* ── Stats preview ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0;
+    }
+
+    /* ── CTA ── */
+    .cta-section {
+      text-align: center;
+      padding: 80px 24px;
+      background: linear-gradient(180deg, var(--bg) 0%, var(--card) 100%);
+    }
+    .cta-section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 900;
+      background: linear-gradient(145deg, var(--cream), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+    .cta-section p {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 32px;
+      font-weight: 300;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    footer .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 900;
+      background: linear-gradient(145deg, var(--cream), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    footer p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── Hide QR on mobile, show on desktop ── */
+    @media (max-width: 767px) {
+      .mobile-notice { display: none; }
+      nav { padding: 16px 20px; }
+      footer { padding: 24px 20px; flex-direction: column; text-align: center; }
+    }
+    @media (min-width: 768px) {
+      .mobile-notice { display: block; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-logo">PinTracker</div>
+    <a href="https://www.pintracker.ca/app" class="nav-cta">Open App</a>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">Beta — Free to Join</div>
+    <h1>Bowl More.<br/>Track Everything.</h1>
+    <p>PinTracker is a web-based bowling scorekeeper for leagues, tournaments, and open bowling. No app store. Works on any phone.</p>
+    <div class="hero-buttons">
+      <a href="https://www.pintracker.ca/app" class="btn-primary">Get Started Free</a>
+      <a href="#how-it-works" class="btn-secondary">See How It Works</a>
+    </div>
+    <p class="hero-note">Open on your phone for the best experience</p>
+  </section>
+
+  <!-- QR Code (desktop only) -->
+  <div class="section" style="padding-top:0;">
+    <div class="mobile-notice">
+      <h3>Best on Mobile</h3>
+      <p>PinTracker is designed for your phone. Scan the QR code to open it on your device and add it to your home screen.</p>
+      <div class="qr-code">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=144x144&data=https://www.pintracker.ca&color=1a1208&bgcolor=ffffff" alt="Scan to open PinTracker"/>
+      </div>
+      <p class="qr-label">Scan to open on your phone</p>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- Features -->
+  <section class="section">
+    <p class="section-label">Features</p>
+    <h2 class="section-title">Everything a bowler needs</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎳</div>
+        <h3>Live Scoring</h3>
+        <p>Tap the pins after each ball and your scorecard updates instantly. Strikes, spares, splits — all tracked automatically.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🏆</div>
+        <h3>Leagues</h3>
+        <p>Create leagues, bowl series, and track your season stats. Archive leagues at the end of the season without losing history.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Detailed Stats</h3>
+        <p>Strike rate, spare percentage, single pin and multi-pin conversions, splits — drill down into every aspect of your game.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Tournaments</h3>
+        <p>Track tournament sessions separately with their own stats and history. Great for competitive events.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>No App Store Needed</h3>
+        <p>Visit the website, add it to your home screen, and it works just like a native app — offline included.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">☁️</div>
+        <h3>Synced Everywhere</h3>
+        <p>Your data is backed up to the cloud. Sign in on any device and your full history is right there.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider"/>
+
+  <!-- How it works -->
+  <section class="section" id="how-it-works">
+    <p class="section-label">Get Started</p>
+    <h2 class="section-title">Up and running in minutes</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>Visit on Your Phone</h3>
+        <p>Open pintracker.ca in your mobile browser. No download required.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>Add to Home Screen</h3>
+        <p>Tap the install prompt or use your browser menu to add PinTracker to your home screen.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>Create an Account</h3>
+        <p>Sign up with your email or Google account. Free during beta.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">4</div>
+        <h3>Start Bowling</h3>
+        <p>Pick open bowling, start a league, or track a tournament. Your stats build automatically.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider"/>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2>Ready to Track Your Game?</h2>
+    <p>Free during beta. Open on your phone to get started.</p>
+    <a href="https://www.pintracker.ca/app" class="btn-primary">Get Started Free</a>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="logo">PinTracker</div>
+    <p>© 2026 PinTracker &nbsp;·&nbsp; <a href="mailto:davewebbdesigns@gmail.com">Contact</a></p>
+  </footer>
+
+</body>
+</html>
