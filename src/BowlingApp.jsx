@@ -1894,8 +1894,18 @@ function AuthView({ onAuth }) {
   const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
 
+  const BETA_LIMIT = 50;
+
   const handleSubmit = async () => {
     setError(""); setLoading(true);
+    if (mode === "signup") {
+      const { count } = await supabase.from("profiles").select("*", { count:"exact", head:true });
+      if (count !== null && count >= BETA_LIMIT) {
+        setLoading(false);
+        setError("Beta registration is now closed — we've reached our limit. Check back for the full launch!");
+        return;
+      }
+    }
     let result;
     if (mode === "login") {
       result = await supabase.auth.signInWithPassword({ email, password });
