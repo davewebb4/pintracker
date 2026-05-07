@@ -554,7 +554,7 @@ function LeagueNewView({ onNavigate, onCreate }) {
 }
 
 // ─── League Detail ───
-function LeagueDetailView({ league, games, onStartSeries, onSelectSeries, onViewStats, onArchive }) {
+function LeagueDetailView({ league, games, onStartSeries, onSelectSeries, onViewStats, onArchive, onDelete }) {
   const leagueGames = games.filter(g=>g.leagueId===league.id&&g.complete);
 
   // Group by seriesId
@@ -600,6 +600,11 @@ function LeagueDetailView({ league, games, onStartSeries, onSelectSeries, onView
           color:C.muted,cursor:"pointer",fontSize:13,letterSpacing:2,
           textTransform:"uppercase",fontFamily:"'Oswald',sans-serif",padding:"10px 0",
         }}>{league.archived ? "Unarchive League" : "Archive League"}</button>
+        <button onClick={()=>{ if(confirm(`Delete "${league.name}" and all its games? This cannot be undone.`)) onDelete(league.id); }} style={{
+          background:"none",border:`1px solid #3a2020`,borderRadius:12,
+          color:"#c85050",cursor:"pointer",fontSize:13,letterSpacing:2,
+          textTransform:"uppercase",fontFamily:"'Oswald',sans-serif",padding:"10px 0",
+        }}>Delete League</button>
       </div>
 
       {seriesList.length===0?(
@@ -633,7 +638,7 @@ function LeagueDetailView({ league, games, onStartSeries, onSelectSeries, onView
 }
 
 // ─── Series Detail (view past series stats) ───
-function SeriesDetailView({ series, league, onViewStats, onFrameEdit }) {
+function SeriesDetailView({ series, league, onViewStats, onFrameEdit, onDelete }) {
   const [selectedGame, setSelectedGame] = useState(null);
   const scores = series.map(g => calculateScore(g.frames));
   const total  = scores.reduce((a,b) => a+b, 0);
@@ -652,9 +657,14 @@ function SeriesDetailView({ series, league, onViewStats, onFrameEdit }) {
         <div style={{fontSize:64,fontWeight:700,color:C.gold,fontFamily:"'Oswald',sans-serif",lineHeight:1}}>{total}</div>
         <div style={{fontSize:14,color:C.muted,marginTop:4}}>{series.length}-game series · avg {avg}</div>
       </div>
-      <button style={{...btnSecondary(), marginBottom:20, fontSize:14, letterSpacing:2}} onClick={onViewStats}>
-        Date Statistics
-      </button>
+      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+        <button style={{...btnSecondary(),fontSize:14,letterSpacing:2}} onClick={onViewStats}>Date Statistics</button>
+        <button onClick={()=>{ if(confirm("Delete this series and all its games? This cannot be undone.")) onDelete(series.map(g=>g.id)); }} style={{
+          background:"none",border:`1px solid #3a2020`,borderRadius:12,
+          color:"#c85050",cursor:"pointer",fontSize:13,letterSpacing:2,
+          textTransform:"uppercase",fontFamily:"'Oswald',sans-serif",padding:"10px 0",
+        }}>Delete Series</button>
+      </div>
       <div style={{background:C.card,borderRadius:12,border:`1px solid ${C.border}`,overflow:"hidden",marginBottom:10}}>
         {series.map((game, gi) => (
           <div key={gi} onClick={()=>setSelectedGame(game)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:gi<series.length-1?`1px solid ${C.border}`:"none",cursor:"pointer"}}>
@@ -1463,7 +1473,7 @@ function GameDetailOverlay({ game, gameNumber, sessionTotal, sessionAvg, onClose
   );
 }
 
-function OpenSessionDetailView({ session, onViewStats, onNewGame, onFrameEdit }) {
+function OpenSessionDetailView({ session, onViewStats, onNewGame, onFrameEdit, onDelete }) {
   const [selectedGame, setSelectedGame] = useState(null);
   const scores = session.map(g => calculateScore(g.frames));
   const total  = scores.reduce((a,b)=>a+b,0);
@@ -1486,6 +1496,11 @@ function OpenSessionDetailView({ session, onViewStats, onNewGame, onFrameEdit })
       <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
         {isToday && <button style={btnPrimary()} onClick={onNewGame}>New Game</button>}
         <button style={{...btnSecondary(),fontSize:14,letterSpacing:2}} onClick={onViewStats}>Session Stats</button>
+        <button onClick={()=>{ if(confirm("Delete this session and all its games? This cannot be undone.")) onDelete(session.map(g=>g.id)); }} style={{
+          background:"none",border:`1px solid #3a2020`,borderRadius:12,
+          color:"#c85050",cursor:"pointer",fontSize:13,letterSpacing:2,
+          textTransform:"uppercase",fontFamily:"'Oswald',sans-serif",padding:"10px 0",
+        }}>Delete Session</button>
       </div>
       <div style={{background:C.card,borderRadius:12,border:`1px solid ${C.border}`,overflow:"hidden"}}>
         {session.map((game, gi) => (
@@ -1605,7 +1620,7 @@ function TournamentSessionNextView({ activeTournamentSession, onStartNext, onEnd
   );
 }
 
-function TournamentSessionDetailView({ session, onViewStats, onNewGame, onFrameEdit }) {
+function TournamentSessionDetailView({ session, onViewStats, onNewGame, onFrameEdit, onDelete }) {
   const [selectedGame, setSelectedGame] = useState(null);
   const scores = session.map(g => calculateScore(g.frames));
   const total  = scores.reduce((a,b)=>a+b,0);
@@ -1630,6 +1645,11 @@ function TournamentSessionDetailView({ session, onViewStats, onNewGame, onFrameE
       <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
         {isToday && <button style={btnPrimary()} onClick={onNewGame}>New Game</button>}
         <button style={{...btnSecondary(),fontSize:14,letterSpacing:2}} onClick={onViewStats}>Tournament Stats</button>
+        <button onClick={()=>{ if(confirm("Delete this tournament session and all its games? This cannot be undone.")) onDelete(session.map(g=>g.id)); }} style={{
+          background:"none",border:`1px solid #3a2020`,borderRadius:12,
+          color:"#c85050",cursor:"pointer",fontSize:13,letterSpacing:2,
+          textTransform:"uppercase",fontFamily:"'Oswald',sans-serif",padding:"10px 0",
+        }}>Delete Session</button>
       </div>
       <div style={{background:C.card,borderRadius:12,border:`1px solid ${C.border}`,overflow:"hidden"}}>
         {session.map((game, gi) => (
@@ -2165,6 +2185,28 @@ export default function BowlingApp() {
     if (selectedLeague?.id === leagueId) setSelectedLeague(updated);
   };
 
+  const deleteLeague = async (leagueId) => {
+    const newLeagues = leagues.filter(l => l.id !== leagueId);
+    const newGames   = games.filter(g => g.leagueId !== leagueId);
+    setLeagues(newLeagues);
+    setGames(newGames);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ leagues: newLeagues, games: newGames })); } catch(e){}
+    if (user) {
+      await supabase.from("games").delete().eq("user_id", user.id).eq("league_id", leagueId);
+      await supabase.from("leagues").delete().eq("user_id", user.id).eq("id", leagueId);
+    }
+    setView("leagues");
+  };
+
+  const deleteSession = async (gameIds) => {
+    const newGames = games.filter(g => !gameIds.includes(g.id));
+    setGames(newGames);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ leagues, games: newGames })); } catch(e){}
+    if (user) {
+      await Promise.all(gameIds.map(id => supabase.from("games").delete().eq("user_id", user.id).eq("id", id)));
+    }
+  };
+
   const startSeries = (league) => {
     const seriesId = uuid();
     const series = { id: seriesId, league, completedGames: [] };
@@ -2682,7 +2724,8 @@ export default function BowlingApp() {
               onStartSeries={startSeries}
               onSelectSeries={series=>{setSelectedSeries(series);setView("series-detail");}}
               onViewStats={()=>setView("league-stats")}
-              onArchive={archiveLeague}/>
+              onArchive={archiveLeague}
+              onDelete={deleteLeague}/>
           )}
 
           {view==="league-stats"&&selectedLeague&&(
@@ -2692,7 +2735,8 @@ export default function BowlingApp() {
           {view==="series-detail"&&selectedSeries&&(
             <SeriesDetailView series={selectedSeries} league={selectedLeague}
               onViewStats={()=>setView("series-stats")}
-              onFrameEdit={editHistoricalFrame}/>
+              onFrameEdit={editHistoricalFrame}
+              onDelete={ids=>{deleteSession(ids);setView("league-detail");}}/>
           )}
 
           {view==="series-stats"&&selectedSeries&&(
@@ -2710,7 +2754,8 @@ export default function BowlingApp() {
             <OpenSessionDetailView session={selectedOpenSession}
               onViewStats={()=>setView("open-session-stats")}
               onNewGame={()=>continueOpenSession(selectedOpenSession)}
-              onFrameEdit={editHistoricalFrame}/>
+              onFrameEdit={editHistoricalFrame}
+              onDelete={ids=>{deleteSession(ids);setView("open");}}/>
           )}
 
           {view==="open-session-stats"&&selectedOpenSession&&(
@@ -2741,7 +2786,8 @@ export default function BowlingApp() {
             <TournamentSessionDetailView session={selectedTournamentSession}
               onViewStats={()=>setView("tournament-session-stats")}
               onNewGame={()=>continueTournamentSession(selectedTournamentSession)}
-              onFrameEdit={editHistoricalFrame}/>
+              onFrameEdit={editHistoricalFrame}
+              onDelete={ids=>{deleteSession(ids);setView("tournaments");}}/>
           )}
 
           {view==="tournament-session-stats"&&selectedTournamentSession&&(
