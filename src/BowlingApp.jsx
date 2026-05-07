@@ -447,43 +447,66 @@ function HomeView({ leagues, games, onNavigate, activeGame, onResume, onAbandon 
 
 // ─── Leagues List ───
 function LeaguesView({ leagues, games, onNavigate, onSelectLeague }) {
+  const [showArchived, setShowArchived] = useState(false);
+  const active   = leagues.filter(l => !l.archived);
+  const archived = leagues.filter(l => l.archived);
+
+  const renderLeague = (league) => {
+    const lg = games.filter(g=>g.leagueId===league.id&&g.complete);
+    const scores = lg.map(g=>calculateScore(g.frames));
+    const avg = scores.length>0?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(0):"—";
+    const high = scores.length>0?Math.max(...scores):"—";
+    const seriesMap2 = {};
+    for (const g of lg) { const k=g.seriesId||g.id; if(!seriesMap2[k]) seriesMap2[k]=[]; seriesMap2[k].push(g); }
+    const seriesTotals2 = Object.values(seriesMap2).map(s=>s.reduce((t,g)=>t+calculateScore(g.frames),0));
+    const highSeries2 = seriesTotals2.length>0?Math.max(...seriesTotals2):"—";
+    return (
+      <div key={league.id} onClick={()=>{onSelectLeague(league);onNavigate("league-detail");}} style={{
+        background:C.card, borderRadius:12, padding:16,
+        border:`1px solid ${league.archived ? C.border : C.border}`,
+        marginTop:12, cursor:"pointer",
+        opacity: league.archived ? 0.6 : 1,
+      }}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontFamily:"'Oswald',sans-serif",fontSize:20,color:league.archived?C.muted:C.gold,fontWeight:600}}>{league.name}</div>
+          {league.archived && <span style={{fontSize:11,color:C.muted,letterSpacing:2,textTransform:"uppercase",border:`1px solid ${C.border}`,borderRadius:4,padding:"2px 6px"}}>Archived</span>}
+        </div>
+        {scores.length>0&&(
+          <div style={{display:"flex",gap:16,marginTop:12,paddingTop:12,borderTop:`1px solid ${C.border}`,flexWrap:"wrap"}}>
+            {[{l:"HIGH",v:high},{l:"SERIES",v:highSeries2},{l:"AVG",v:avg}].map(s=>(
+              <div key={s.l} style={{display:"flex",alignItems:"baseline",gap:5}}>
+                <span style={{fontSize:18,fontWeight:400,color:league.archived?C.muted:C.gold,fontFamily:"'Oswald',sans-serif"}}>{s.v}</span>
+                <span style={{fontSize:12,color:C.muted,letterSpacing:1}}>{s.l}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{padding:"0 16px 80px"}}>
       <button style={btnPrimary()} onClick={()=>onNavigate("league-new")}>+ New League</button>
-      {leagues.length===0 ? (
+      {active.length===0 ? (
         <div style={{textAlign:"center",padding:40,color:C.muted}}>
-          <p style={{fontFamily:"'Oswald',sans-serif",fontSize:16}}>No leagues yet</p>
-          <p style={{fontSize:14,marginTop:6}}>Create your first league above</p>
+          <p style={{fontFamily:"'Oswald',sans-serif",fontSize:16}}>No active leagues</p>
+          <p style={{fontSize:14,marginTop:6}}>Create a new league above</p>
         </div>
-      ) : leagues.map(league => {
-        const lg = games.filter(g=>g.leagueId===league.id&&g.complete);
-        const scores = lg.map(g=>calculateScore(g.frames));
-        const avg = scores.length>0?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(0):"—";
-        const high = scores.length>0?Math.max(...scores):"—";
-        const seriesCount = new Set(lg.map(g=>g.seriesId).filter(Boolean)).size;
-        const seriesMap2 = {};
-        for (const g of lg) { const k=g.seriesId||g.id; if(!seriesMap2[k]) seriesMap2[k]=[]; seriesMap2[k].push(g); }
-        const seriesTotals2 = Object.values(seriesMap2).map(s=>s.reduce((t,g)=>t+calculateScore(g.frames),0));
-        const highSeries2 = seriesTotals2.length>0?Math.max(...seriesTotals2):"—";
-        return (
-          <div key={league.id} onClick={()=>{onSelectLeague(league);onNavigate("league-detail");}} style={{
-            background:C.card, borderRadius:12, padding:16,
-            border:`1px solid ${C.border}`, marginTop:12, cursor:"pointer",
+      ) : active.map(renderLeague)}
+      {archived.length>0&&(
+        <div style={{marginTop:24}}>
+          <button onClick={()=>setShowArchived(v=>!v)} style={{
+            background:"none",border:"none",color:C.muted,cursor:"pointer",
+            fontSize:13,letterSpacing:2,textTransform:"uppercase",
+            fontFamily:"'Oswald',sans-serif",padding:"8px 0",display:"flex",alignItems:"center",gap:8,
           }}>
-            <div style={{fontFamily:"'Oswald',sans-serif",fontSize:20,color:C.gold,fontWeight:600,textAlign:"left"}}>{league.name}</div>
-            {scores.length>0&&(
-              <div style={{display:"flex",gap:16,marginTop:12,paddingTop:12,borderTop:`1px solid ${C.border}`,flexWrap:"wrap"}}>
-                {[{l:"HIGH",v:high},{l:"SERIES",v:highSeries2},{l:"AVG",v:avg}].map(s=>(
-                  <div key={s.l} style={{display:"flex",alignItems:"baseline",gap:5}}>
-                    <span style={{fontSize:18,fontWeight:400,color:C.gold,fontFamily:"'Oswald',sans-serif"}}>{s.v}</span>
-                    <span style={{fontSize:12,color:C.muted,letterSpacing:1}}>{s.l}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+            <span>{showArchived?"▾":"▸"}</span>
+            <span>Archived Leagues ({archived.length})</span>
+          </button>
+          {showArchived && archived.map(renderLeague)}
+        </div>
+      )}
     </div>
   );
 }
@@ -531,7 +554,7 @@ function LeagueNewView({ onNavigate, onCreate }) {
 }
 
 // ─── League Detail ───
-function LeagueDetailView({ league, games, onStartSeries, onSelectSeries, onViewStats }) {
+function LeagueDetailView({ league, games, onStartSeries, onSelectSeries, onViewStats, onArchive }) {
   const leagueGames = games.filter(g=>g.leagueId===league.id&&g.complete);
 
   // Group by seriesId
@@ -568,10 +591,15 @@ function LeagueDetailView({ league, games, onStartSeries, onSelectSeries, onView
       )}
 
       <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-        <button style={btnPrimary()} onClick={()=>onStartSeries(league)}>Bowl Series</button>
+        {!league.archived && <button style={btnPrimary()} onClick={()=>onStartSeries(league)}>Bowl Series</button>}
         {leagueGames.length>0&&(
           <button style={{...btnSecondary(),fontSize:14,letterSpacing:1}} onClick={onViewStats}>League Stats</button>
         )}
+        <button onClick={()=>onArchive(league.id, !league.archived)} style={{
+          background:"none",border:`1px solid ${C.border}`,borderRadius:12,
+          color:C.muted,cursor:"pointer",fontSize:13,letterSpacing:2,
+          textTransform:"uppercase",fontFamily:"'Oswald',sans-serif",padding:"10px 0",
+        }}>{league.archived ? "Unarchive League" : "Archive League"}</button>
       </div>
 
       {seriesList.length===0?(
@@ -2032,9 +2060,9 @@ export default function BowlingApp() {
 
   const isUUID = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id));
 
-  const toLeagueRow  = (l) => ({ id:l.id, user_id:user.id, name:l.name, games_per_series:l.gamesPerSeries });
+  const toLeagueRow  = (l) => ({ id:l.id, user_id:user.id, name:l.name, games_per_series:l.gamesPerSeries, archived:l.archived||false });
   const toGameRow    = (g) => ({ id:g.id, user_id:user.id, league_id:g.leagueId||null, league_name:g.leagueName||null, series_id:g.seriesId?String(g.seriesId):null, type:g.type||"open", date:g.date, frames:g.frames, complete:g.complete });
-  const fromLeagueRow = (r) => ({ id:r.id, name:r.name, gamesPerSeries:r.games_per_series });
+  const fromLeagueRow = (r) => ({ id:r.id, name:r.name, gamesPerSeries:r.games_per_series, archived:r.archived||false });
   const fromGameRow   = (r) => ({ id:r.id, leagueId:r.league_id, leagueName:r.league_name, seriesId:r.series_id, type:r.type, date:r.date, frames:r.frames, complete:r.complete });
 
   // ─── Load from Supabase on login ───
@@ -2128,6 +2156,13 @@ export default function BowlingApp() {
   const createLeague = (name, gamesPerSeries) => {
     const newLeague = emptyLeague(name, gamesPerSeries);
     save([...leagues, newLeague], games, newLeague, null);
+  };
+
+  const archiveLeague = (leagueId, archived) => {
+    const newLeagues = leagues.map(l => l.id === leagueId ? {...l, archived} : l);
+    const updated = newLeagues.find(l => l.id === leagueId);
+    save(newLeagues, games, updated, null);
+    if (selectedLeague?.id === leagueId) setSelectedLeague(updated);
   };
 
   const startSeries = (league) => {
@@ -2646,7 +2681,8 @@ export default function BowlingApp() {
             <LeagueDetailView league={selectedLeague} games={games}
               onStartSeries={startSeries}
               onSelectSeries={series=>{setSelectedSeries(series);setView("series-detail");}}
-              onViewStats={()=>setView("league-stats")}/>
+              onViewStats={()=>setView("league-stats")}
+              onArchive={archiveLeague}/>
           )}
 
           {view==="league-stats"&&selectedLeague&&(
