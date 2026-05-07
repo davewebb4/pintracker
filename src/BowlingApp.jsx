@@ -1888,13 +1888,25 @@ function HelpView() {
 
 // ─── Auth ───
 function AuthView({ onAuth }) {
-  const [mode, setMode]       = useState("login"); // "login" | "signup"
+  const [mode, setMode]       = useState("login"); // "login" | "signup" | "reset"
   const [email, setEmail]     = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const BETA_LIMIT = 50;
+
+  const handleReset = async () => {
+    if (!email.trim()) { setError("Please enter your email address."); return; }
+    setError(""); setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    setLoading(false);
+    if (error) { setError(error.message); return; }
+    setResetSent(true);
+  };
 
   const handleSubmit = async () => {
     setError(""); setLoading(true);
@@ -1946,19 +1958,24 @@ function AuthView({ onAuth }) {
         </div>
 
         <div style={{background:C.card,borderRadius:16,padding:24,border:`1px solid ${C.border}`}}>
-          <div style={{display:"flex",marginBottom:20,background:C.bg,borderRadius:8,padding:3}}>
-            {["login","signup"].map(m => (
-              <button key={m} onClick={()=>{setMode(m);setError("");}}
-                style={{flex:1,padding:"8px",border:"none",borderRadius:6,cursor:"pointer",
-                  fontFamily:"'Oswald',sans-serif",fontSize:13,letterSpacing:1,textTransform:"uppercase",
-                  background:mode===m?C.gold:"transparent",
-                  color:mode===m?C.btnText:C.muted,
-                  transition:"all 0.2s",
-                }}>
-                {m === "login" ? "Sign In" : "Sign Up"}
-              </button>
-            ))}
-          </div>
+          {mode !== "reset" && (
+            <div style={{display:"flex",marginBottom:20,background:C.bg,borderRadius:8,padding:3}}>
+              {["login","signup"].map(m => (
+                <button key={m} onClick={()=>{setMode(m);setError("");}}
+                  style={{flex:1,padding:"8px",border:"none",borderRadius:6,cursor:"pointer",
+                    fontFamily:"'Oswald',sans-serif",fontSize:13,letterSpacing:1,textTransform:"uppercase",
+                    background:mode===m?C.gold:"transparent",
+                    color:mode===m?C.btnText:C.muted,
+                    transition:"all 0.2s",
+                  }}>
+                  {m === "login" ? "Sign In" : "Sign Up"}
+                </button>
+              ))}
+            </div>
+          )}
+          {mode === "reset" && (
+            <div style={{fontSize:15,color:C.cream,fontWeight:600,marginBottom:20,textAlign:"center",letterSpacing:1}}>Reset Password</div>
+          )}
 
           <div style={{marginBottom:14}}>
             <div style={{fontSize:12,color:C.muted,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Email</div>
@@ -1985,27 +2002,55 @@ function AuthView({ onAuth }) {
 
           {error&&<div style={{fontSize:13,color:"#c85050",marginBottom:14,lineHeight:1.5}}>{error}</div>}
 
-          <button onClick={handleSubmit} disabled={loading}
-            style={{...btnPrimary(),width:"100%",padding:"12px",fontSize:15,marginBottom:12,opacity:loading?0.6:1}}>
-            {loading ? "Please wait…" : mode === "login" ? "Sign In" : "Create Account"}
-          </button>
+          {mode === "reset" ? (
+            resetSent ? (
+              <div style={{textAlign:"center",padding:"8px 0"}}>
+                <div style={{fontSize:15,color:C.gold,marginBottom:8}}>Check your email</div>
+                <div style={{fontSize:13,color:C.muted,lineHeight:1.5,marginBottom:16}}>We sent a password reset link to {email}</div>
+                <button onClick={()=>{setMode("login");setResetSent(false);}} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:14,fontFamily:"'Oswald',sans-serif"}}>← Back to Sign In</button>
+              </div>
+            ) : (
+              <>
+                <button onClick={handleReset} disabled={loading}
+                  style={{...btnPrimary(),width:"100%",padding:"12px",fontSize:15,marginBottom:12,opacity:loading?0.6:1}}>
+                  {loading ? "Sending…" : "Send Reset Link"}
+                </button>
+                <button onClick={()=>{setMode("login");setError("");}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:13,width:"100%",fontFamily:"'Oswald',sans-serif"}}>← Back to Sign In</button>
+              </>
+            )
+          ) : (
+            <>
+              <button onClick={handleSubmit} disabled={loading}
+                style={{...btnPrimary(),width:"100%",padding:"12px",fontSize:15,marginBottom:12,opacity:loading?0.6:1}}>
+                {loading ? "Please wait…" : mode === "login" ? "Sign In" : "Create Account"}
+              </button>
 
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-            <div style={{flex:1,height:1,background:C.border}}/>
-            <span style={{fontSize:12,color:C.muted}}>OR</span>
-            <div style={{flex:1,height:1,background:C.border}}/>
-          </div>
+              {mode === "login" && (
+                <div style={{textAlign:"center",marginBottom:12}}>
+                  <button onClick={()=>{setMode("reset");setError("");}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:13,fontFamily:"'Oswald',sans-serif"}}>
+                    Forgot password?
+                  </button>
+                </div>
+              )}
 
-          <button onClick={handleGoogle}
-            style={{...btnSecondary(),width:"100%",padding:"11px",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
-              <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
-              <path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/>
-              <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 6.294C4.672 4.169 6.656 3.58 9 3.58z"/>
-            </svg>
-            Continue with Google
-          </button>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                <div style={{flex:1,height:1,background:C.border}}/>
+                <span style={{fontSize:12,color:C.muted}}>OR</span>
+                <div style={{flex:1,height:1,background:C.border}}/>
+              </div>
+
+              <button onClick={handleGoogle}
+                style={{...btnSecondary(),width:"100%",padding:"11px",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+                <svg width="18" height="18" viewBox="0 0 18 18">
+                  <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                  <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+                  <path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/>
+                  <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 6.294C4.672 4.169 6.656 3.58 9 3.58z"/>
+                </svg>
+                Continue with Google
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
