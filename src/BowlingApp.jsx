@@ -1772,10 +1772,91 @@ function StatsView({ games, leagues }) {
 }
 
 // ─── Settings ───
-function SettingsView({ onResetData, theme, onThemeChange, onSignOut }) {
+function UsernameSetupView({ onSave, loading }) {
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSave = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) { setError("Please enter a username."); return; }
+    if (trimmed.length < 3) { setError("Username must be at least 3 characters."); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) { setError("Only letters, numbers, and underscores."); return; }
+    setError("");
+    const err = await onSave(trimmed);
+    if (err) setError(err.includes("unique") ? "That username is taken — try another." : err);
+  };
+
+  return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(180deg,${C.bg} 0%,${C.card} 100%)`,padding:"0 24px"}}>
+      <div style={{width:"100%",maxWidth:380}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:32,fontWeight:900,margin:"0 0 8px",background:`linear-gradient(145deg,${C.cream},${C.gold})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Welcome!</h1>
+          <p style={{fontSize:14,color:C.muted,margin:0}}>Choose a username to get started</p>
+        </div>
+        <div style={{background:C.card,borderRadius:16,padding:24,border:`1px solid ${C.border}`}}>
+          <div style={{fontSize:12,color:C.muted,letterSpacing:1,marginBottom:6,textTransform:"uppercase"}}>Username</div>
+          <input
+            type="text" value={name} onChange={e=>setName(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&handleSave()}
+            maxLength={20}
+            style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",color:C.text,fontSize:15,fontFamily:"'Oswald',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:6}}
+            placeholder="e.g. StrikeKing88"
+          />
+          <div style={{fontSize:12,color:C.muted,marginBottom:16}}>Letters, numbers, underscores only. Max 20 characters.</div>
+          {error && <div style={{fontSize:13,color:"#c85050",marginBottom:14}}>{error}</div>}
+          <button onClick={handleSave} disabled={loading} style={{...btnPrimary(),width:"100%",padding:"12px",fontSize:15,opacity:loading?0.6:1}}>
+            {loading ? "Saving…" : "Let's Bowl"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsView({ onResetData, theme, onThemeChange, onSignOut, username, onSaveUsername, userEmail }) {
   const isDark = theme === "dark";
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState(username || "");
+  const [usernameError, setUsernameError] = useState("");
+  const [usernameSaving, setUsernameSaving] = useState(false);
+
+  const handleSaveUsername = async () => {
+    const trimmed = newUsername.trim();
+    if (!trimmed) { setUsernameError("Please enter a username."); return; }
+    if (trimmed.length < 3) { setUsernameError("Must be at least 3 characters."); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) { setUsernameError("Only letters, numbers, and underscores."); return; }
+    setUsernameError(""); setUsernameSaving(true);
+    const err = await onSaveUsername(trimmed);
+    setUsernameSaving(false);
+    if (err) { setUsernameError(err.includes("unique") ? "That username is taken." : err); return; }
+    setEditingUsername(false);
+  };
+
   return (
     <div style={{padding:"0 16px 80px"}}>
+      <div style={{background:C.card,borderRadius:12,padding:16,border:`1px solid ${C.border}`,marginBottom:16}}>
+        <h3 style={{fontSize:14,color:C.gold,marginBottom:12,fontFamily:"'Oswald',sans-serif",textTransform:"uppercase",letterSpacing:2}}>Profile</h3>
+        <div style={{fontSize:13,color:C.muted,marginBottom:4}}>Email</div>
+        <div style={{fontSize:15,color:C.cream,marginBottom:14}}>{userEmail}</div>
+        <div style={{fontSize:13,color:C.muted,marginBottom:4}}>Username</div>
+        {editingUsername ? (
+          <>
+            <input value={newUsername} onChange={e=>setNewUsername(e.target.value)} maxLength={20}
+              style={{width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",color:C.text,fontSize:15,fontFamily:"'Oswald',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:8}}
+            />
+            {usernameError && <div style={{fontSize:13,color:"#c85050",marginBottom:8}}>{usernameError}</div>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={handleSaveUsername} disabled={usernameSaving} style={{...btnPrimary(),flex:1,padding:"9px",fontSize:13,opacity:usernameSaving?0.6:1}}>{usernameSaving?"Saving…":"Save"}</button>
+              <button onClick={()=>{setEditingUsername(false);setNewUsername(username||"");setUsernameError("");}} style={{...btnSecondary(),flex:1,padding:"9px",fontSize:13}}>Cancel</button>
+            </div>
+          </>
+        ) : (
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{fontSize:15,color:C.cream}}>{username || "Not set"}</div>
+            <button onClick={()=>setEditingUsername(true)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,color:C.gold,cursor:"pointer",fontSize:13,padding:"6px 14px",fontFamily:"'Oswald',sans-serif"}}>Edit</button>
+          </div>
+        )}
+      </div>
       <div style={{background:C.card,borderRadius:12,padding:16,border:`1px solid ${C.border}`,marginBottom:16}}>
         <h3 style={{fontSize:14,color:C.gold,marginBottom:4,fontFamily:"'Oswald',sans-serif",textTransform:"uppercase",letterSpacing:2}}>Appearance</h3>
         <p style={{fontSize:14,color:C.muted,marginBottom:14,lineHeight:1.6}}>Choose your preferred colour theme.</p>
@@ -2082,6 +2163,8 @@ export default function BowlingApp() {
     try { return localStorage.getItem("pinpal-theme") || "dark"; } catch(e) { return "dark"; }
   });
   const [user, setUser] = useState(null);
+  const [username, setUsername] = useState(null);
+  const [usernameLoading, setUsernameLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isStandalone, setIsStandalone] = useState(() =>
@@ -2147,10 +2230,14 @@ export default function BowlingApp() {
       setDataLoading(true);
       setSyncError(null);
       try {
-        const [{ data: lgData, error: lgErr }, { data: gmData, error: gmErr }] = await Promise.all([
+        const [{ data: lgData, error: lgErr }, { data: gmData, error: gmErr }, { data: profData }] = await Promise.all([
           supabase.from("leagues").select("*").eq("user_id", user.id).order("created_at"),
           supabase.from("games").select("*").eq("user_id", user.id).order("created_at"),
+          supabase.from("profiles").select("username").eq("id", user.id).single(),
         ]);
+        if (lgErr) throw lgErr;
+        if (gmErr) throw gmErr;
+        setUsername(profData?.username || null);
         if (lgErr) throw lgErr;
         if (gmErr) throw gmErr;
         setLeagues((lgData||[]).map(fromLeagueRow));
@@ -2238,6 +2325,15 @@ export default function BowlingApp() {
     const updated = newLeagues.find(l => l.id === leagueId);
     save(newLeagues, games, updated, null);
     if (selectedLeague?.id === leagueId) setSelectedLeague(updated);
+  };
+
+  const saveUsername = async (name) => {
+    setUsernameLoading(true);
+    const { error } = await supabase.from("profiles").update({ username: name }).eq("id", user.id);
+    setUsernameLoading(false);
+    if (error) return error.message;
+    setUsername(name);
+    return null;
   };
 
   const deleteLeague = async (leagueId) => {
@@ -2630,6 +2726,7 @@ export default function BowlingApp() {
   );
 
   if (!user) return <AuthView onAuth={setUser}/>;
+  if (user && !dataLoading && username === null) return <UsernameSetupView onSave={saveUsername} loading={usernameLoading}/>;
 
   return (
     <div style={{
@@ -2865,7 +2962,7 @@ export default function BowlingApp() {
 
           {view==="stats"&&<StatsView games={games} leagues={leagues}/>}
 
-          {view==="settings"&&<SettingsView onResetData={resetData} theme={theme} onThemeChange={t=>{setTheme(t);try{localStorage.setItem("pinpal-theme",t);}catch(e){}}} onSignOut={async()=>{await supabase.auth.signOut();setUser(null);}}/>}
+          {view==="settings"&&<SettingsView onResetData={resetData} theme={theme} onThemeChange={t=>{setTheme(t);try{localStorage.setItem("pinpal-theme",t);}catch(e){}}} onSignOut={async()=>{await supabase.auth.signOut();setUser(null);setUsername(null);}} username={username} onSaveUsername={saveUsername} userEmail={user?.email}/>}
           {view==="help"&&<HelpView/>}
 
           {/* ─── Game ─── */}
