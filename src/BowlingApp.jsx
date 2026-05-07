@@ -1950,7 +1950,7 @@ function HelpView() {
       </>)}
       {section("Contact & Feedback", <>
         {p("Have a suggestion or found a bug? We'd love to hear from you.")}
-        <a href="mailto:davewebbdesigns@gmail.com" style={{fontSize:14,color:C.gold,textDecoration:"none"}}>davewebbdesigns@gmail.com</a>
+        <a href="mailto:info@pintracker.ca" style={{fontSize:14,color:C.gold,textDecoration:"none"}}>info@pintracker.ca</a>
       </>)}
     </div>
   );
