@@ -1894,74 +1894,63 @@ function SettingsView({ onResetData, theme, onThemeChange, onSignOut, username, 
 // ─── Help ───
 function HelpView() {
   const section = (title, children) => (
-    <div style={{background:C.card,borderRadius:12,padding:16,border:`1px solid ${C.border}`,marginBottom:16}}>
-      <h3 style={{fontSize:14,color:C.gold,marginBottom:10,fontFamily:"'Oswald',sans-serif",textTransform:"uppercase",letterSpacing:2}}>{title}</h3>
+    <div style={{background:C.card,borderRadius:12,padding:16,border:`1px solid ${C.border}`,marginBottom:12,textAlign:"left"}}>
+      <h3 style={{fontSize:14,color:C.gold,marginBottom:10,fontFamily:"'Oswald',sans-serif",textTransform:"uppercase",letterSpacing:2,margin:"0 0 10px"}}>{title}</h3>
       {children}
     </div>
   );
-  const p = (text) => <p style={{fontSize:14,color:C.muted,lineHeight:1.7,margin:"0 0 8px"}}>{text}</p>;
-  const li = (text) => <li style={{fontSize:14,color:C.muted,lineHeight:1.7,marginBottom:4}}>{text}</li>;
+  const p = (text) => <p style={{fontSize:14,color:C.muted,lineHeight:1.7,margin:"0 0 8px",textAlign:"left"}}>{text}</p>;
+  const li = (text) => <li style={{fontSize:14,color:C.cream,lineHeight:1.7,marginBottom:6,textAlign:"left"}}>{text}</li>;
+  const ul = (items) => <ul style={{paddingLeft:16,margin:0,listStyle:"none"}}>{items.map((t,i)=><li key={i} style={{fontSize:14,color:C.cream,lineHeight:1.7,marginBottom:6,paddingLeft:8,borderLeft:`2px solid ${C.border}`}}>{t}</li>)}</ul>;
+
   return (
-    <div style={{padding:"0 16px 80px"}}>
-      {section("Leagues", <>
-        {p("Leagues let you track your bowling across a full season.")}
-        <ul style={{paddingLeft:18,margin:0}}>
-          {li("Tap New League to create a league and set the number of games per series.")}
-          {li("Tap Bowl Series to start a new series within that league.")}
-          {li("After each game you can continue to the next game in the series or stop early.")}
-          {li("Tap any past series to view the scorecard for each game.")}
-          {li("Use League Stats to see your average, high game, high series, spare and split percentages.")}
-        </ul>
-      </>)}
-      {section("Tournaments", <>
-        {p("Tournaments track a set of games bowled at a specific event.")}
-        <ul style={{paddingLeft:18,margin:0}}>
-          {li("Tap Start Tournament and give your tournament a name.")}
-          {li("Bowl as many games as needed — each game is added to the session total.")}
-          {li("Tap End Session when finished to save the tournament.")}
-          {li("View past tournaments and their full stats from the Tournaments tab.")}
-        </ul>
-      </>)}
-      {section("Open Bowling", <>
-        {p("Open Bowling is for casual sessions outside of leagues or tournaments.")}
-        <ul style={{paddingLeft:18,margin:0}}>
-          {li("Start a session and bowl as many games as you like.")}
-          {li("Your running total and average update after each game.")}
-          {li("Tap End Session to save or continue bowling.")}
-          {li("All open sessions are saved and viewable from the Open Bowling tab.")}
-        </ul>
+    <div style={{padding:"0 16px 80px",textAlign:"left"}}>
+      {section("Getting Started", <>
+        {p("Welcome to PinTracker. Here's how to get going:")}
+        {ul([
+          "Sign in or create an account, then choose a username.",
+          "From the home screen, pick Open Bowling for a casual session, Leagues to track a season, or Tournaments for events.",
+          "During a game, tap the pins that are still standing after each ball — the scorecard updates automatically.",
+          "When your game is complete, your stats are saved and available in the Statistics tab.",
+          "You can edit any frame by tapping it on the scorecard.",
+        ])}
       </>)}
       {section("Scoring", <>
-        {p("After each roll, tap the pins that were knocked down on the pin diagram.")}
-        <ul style={{paddingLeft:18,margin:0}}>
-          {li("Strike — tap Strike or knock all 10 on the first ball.")}
-          {li("Spare — tap Spare or knock all remaining pins on the second ball.")}
-          {li("A split indicator (S) appears when your first ball leave qualifies as a split.")}
-          {li("To correct a frame, tap it on the scorecard and re-enter the rolls.")}
-          {li("If you leave the app mid-game, a Game In Progress banner appears on the home screen — tap Resume to continue or Abandon to discard.")}
-        </ul>
+        {ul([
+          "Tap the pins still standing after each ball on the pin diagram.",
+          "Tap Strike to record all 10 pins down on the first ball.",
+          "Tap Spare to record all remaining pins on the second ball.",
+          "Red pin numbers indicate a split leave.",
+          "Tap any frame on the scorecard to correct it.",
+          "If you leave mid-game, tap Resume from the home screen to continue.",
+        ])}
+      </>)}
+      {section("Leagues", <>
+        {ul([
+          "Create a league and set games per series (usually 3).",
+          "Tap Bowl Series to start — you'll be prompted to continue after each game.",
+          "Tap any past series to view scorecards and stats.",
+          "Archive a league at the end of the season to keep history without cluttering your list.",
+        ])}
+      </>)}
+      {section("Open Bowling & Tournaments", <>
+        {ul([
+          "Open Bowling is for casual sessions — bowl as many games as you like and tap End Session when done.",
+          "Tournaments work the same way but are tracked separately under the Tournaments tab.",
+          "All sessions are saved and viewable with full stats.",
+        ])}
       </>)}
       {section("Statistics", <>
-        {p("Statistics are calculated across all completed games.")}
-        <ul style={{paddingLeft:18,margin:0}}>
-          {li("View your average, high game, strike rate, and spare percentage.")}
-          {li("Spare and split breakdowns show your conversion rates by specific leave.")}
-          {li("Stats are available per league as well as across all game types.")}
-        </ul>
+        {ul([
+          "Stats are calculated across all completed games.",
+          "View strike rate, spare percentage, single pin and multi-pin conversion rates.",
+          "Tap any stat row to drill down into individual frame results.",
+          "Stats are available per league, per session, and overall.",
+        ])}
       </>)}
-      {section("Settings", <>
-        <ul style={{paddingLeft:18,margin:0}}>
-          {li("Switch between Dark and Light theme under Appearance.")}
-          {li("All data is stored locally on your device — nothing is sent to a server.")}
-          {li("Use Reset All Data to clear all games and leagues. This cannot be undone.")}
-        </ul>
-      </>)}
-      {section("Contact", <>
-        {p("Need help or have a suggestion?")}
-        <p style={{fontSize:14,lineHeight:1.7,margin:0}}>
-          <span style={{color:C.muted}}>Email: </span>
-          <a href="mailto:davewebbdesigns@gmail.com" style={{color:C.gold,textDecoration:"none"}}>davewebbdesigns@gmail.com</a>
-        </p>
+      {section("Contact & Feedback", <>
+        {p("Have a suggestion or found a bug? We'd love to hear from you.")}
+        <a href="mailto:davewebbdesigns@gmail.com" style={{fontSize:14,color:C.gold,textDecoration:"none"}}>davewebbdesigns@gmail.com</a>
       </>)}
     </div>
   );
